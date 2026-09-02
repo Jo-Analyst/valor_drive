@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/gps_tracking_service.dart';
@@ -10,10 +11,7 @@ import '../controllers/ride_signal_controller.dart';
 class CalculationModeSelector extends StatelessWidget {
   final RideSignalController controller;
 
-  const CalculationModeSelector({
-    super.key,
-    required this.controller,
-  });
+  const CalculationModeSelector({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +40,10 @@ class CalculationModeSelector extends StatelessWidget {
             if (currentMode == CalculationMode.gps) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isTracking
                       ? theme.colorScheme.primaryContainer
@@ -97,9 +98,51 @@ class CalculationModeSelector extends StatelessWidget {
               ),
             ],
             selected: {currentMode},
-            onSelectionChanged: (Set<CalculationMode> newSelection) {
+            onSelectionChanged: (Set<CalculationMode> newSelection) async {
               if (newSelection.isNotEmpty) {
                 final selected = newSelection.first;
+
+                if (selected == CalculationMode.gps) {
+                  // Verifica se o GPS está desativado
+                  bool serviceEnabled =
+                      await Geolocator.isLocationServiceEnabled();
+                  if (!serviceEnabled) {
+                    // Mostra diálogo pedindo para ativar o GPS
+                    if (context.mounted) {
+                      final shouldOpenSettings = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('GPS Desativado'),
+                          content: const Text(
+                            'Para usar o modo GPS, você precisa ativar o serviço de localização do dispositivo. Deseja abrir as configurações?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancelar'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Abrir Configurações'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (shouldOpenSettings == true) {
+                        await Geolocator.openLocationSettings();
+                        // Volta para o modo manual se o usuário cancelar
+                        controller.setCalculationMode(CalculationMode.manual);
+                        return;
+                      } else {
+                        // Volta para o modo manual se o usuário cancelar
+                        controller.setCalculationMode(CalculationMode.manual);
+                        return;
+                      }
+                    }
+                  }
+                }
+
                 controller.setCalculationMode(selected);
                 if (selected == CalculationMode.gps && !isTracking) {
                   gpsService.startTracking();
@@ -108,9 +151,7 @@ class CalculationModeSelector extends StatelessWidget {
             },
             style: ButtonStyle(
               shape: WidgetStateProperty.all(
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               visualDensity: VisualDensity.comfortable,
             ),
@@ -151,9 +192,11 @@ class CalculationModeSelector extends StatelessWidget {
                         gpsService.startTracking();
                       }
                     },
-                    icon: Icon(isTracking
-                        ? Icons.pause_circle_filled_rounded
-                        : Icons.play_circle_fill_rounded),
+                    icon: Icon(
+                      isTracking
+                          ? Icons.pause_circle_filled_rounded
+                          : Icons.play_circle_fill_rounded,
+                    ),
                     label: Text(isTracking ? 'Pausar GPS' : 'Iniciar GPS'),
                   ),
                 ),

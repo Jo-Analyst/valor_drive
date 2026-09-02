@@ -5,15 +5,72 @@ import '../../domain/enums/calculation_mode.dart';
 import '../controllers/ride_signal_controller.dart';
 import 'ride_gps_map_widget.dart';
 
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove todos os caracteres não numéricos
+    final sanitized = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    if (sanitized.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Converte para double (divide por 100 para tratar como centavos)
+    final value = int.parse(sanitized) / 100;
+
+    // Formata como moeda brasileira
+    final formatted = value.toStringAsFixed(2).replaceAll('.', ',');
+
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
+class ConsumptionInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove todos os caracteres não numéricos
+    final sanitized = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    if (sanitized.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Converte para double (divide por 10 para tratar como décimos)
+    final value = int.parse(sanitized) / 10;
+
+    // Formata com 1 dígito decimal
+    final formatted = value.toStringAsFixed(1).replaceAll('.', ',');
+
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 /// Formulário de entrada ultra rápido para o motorista inserir ou alterar
 /// os dados operacionais do carro e da corrida.
 class RideInputForm extends StatefulWidget {
   final RideSignalController controller;
 
-  const RideInputForm({
-    super.key,
-    required this.controller,
-  });
+  const RideInputForm({super.key, required this.controller});
 
   @override
   State<RideInputForm> createState() => _RideInputFormState();
@@ -45,24 +102,24 @@ class _RideInputFormState extends State<RideInputForm> {
     );
 
     _fuelConsumptionController = TextEditingController(
-      text: ctrl.fuelConsumptionKmPerLiterSignal.value.toString(),
+      text: _formatConsumption(ctrl.fuelConsumptionKmPerLiterSignal.value),
     );
 
     _fuelPriceController = TextEditingController(
       text: ctrl.fuelPricePerLiterSignal.value > 0
-          ? ctrl.fuelPricePerLiterSignal.value.toStringAsFixed(2)
+          ? _formatCurrency(ctrl.fuelPricePerLiterSignal.value)
           : '',
     );
 
     _maintenanceController = TextEditingController(
       text: ctrl.maintenanceCostPerKmSignal.value > 0
-          ? ctrl.maintenanceCostPerKmSignal.value.toStringAsFixed(2)
+          ? _formatCurrency(ctrl.maintenanceCostPerKmSignal.value)
           : '',
     );
 
     _tariffController = TextEditingController(
       text: ctrl.tariffPerKmSignal.value > 0
-          ? ctrl.tariffPerKmSignal.value.toStringAsFixed(2)
+          ? _formatCurrency(ctrl.tariffPerKmSignal.value)
           : '',
     );
   }
@@ -80,8 +137,22 @@ class _RideInputFormState extends State<RideInputForm> {
 
   double _parseInput(String text) {
     if (text.isEmpty) return 0.0;
-    final sanitized = text.replaceAll(',', '.');
-    return double.tryParse(sanitized) ?? 0.0;
+    final sanitized = text.replaceAll('.', '').replaceAll(',', '');
+    return (double.tryParse(sanitized) ?? 0.0) / 100;
+  }
+
+  double _parseConsumptionInput(String text) {
+    if (text.isEmpty) return 0.0;
+    final sanitized = text.replaceAll('.', '').replaceAll(',', '');
+    return (double.tryParse(sanitized) ?? 0.0) / 10;
+  }
+
+  String _formatConsumption(double value) {
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  String _formatCurrency(double value) {
+    return value.toStringAsFixed(2).replaceAll('.', ',');
   }
 
   @override
@@ -93,8 +164,9 @@ class _RideInputFormState extends State<RideInputForm> {
     // Sincroniza o controller de texto de GPS quando o sinal de GPS for atualizado pelo serviço
     if (mode == CalculationMode.gps &&
         _parseInput(_gpsDistanceController.text) != gpsDistance) {
-      _gpsDistanceController.text =
-          gpsDistance > 0 ? gpsDistance.toStringAsFixed(2) : '';
+      _gpsDistanceController.text = gpsDistance > 0
+          ? gpsDistance.toStringAsFixed(2)
+          : '';
     }
 
     return Column(
@@ -172,8 +244,9 @@ class _RideInputFormState extends State<RideInputForm> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _gpsDistanceController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*')),
                   ],
@@ -214,14 +287,11 @@ class _RideInputFormState extends State<RideInputForm> {
             Expanded(
               child: TextFormField(
                 controller: _fuelConsumptionController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*')),
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [ConsumptionInputFormatter()],
                 decoration: InputDecoration(
                   labelText: 'Consumo (km/L)',
-                  hintText: '10.0',
+                  hintText: '10,0',
                   prefixIcon: const Icon(Icons.directions_car_rounded),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -229,7 +299,9 @@ class _RideInputFormState extends State<RideInputForm> {
                   filled: true,
                 ),
                 onChanged: (value) {
-                  widget.controller.setFuelConsumption(_parseInput(value));
+                  widget.controller.setFuelConsumption(
+                    _parseConsumptionInput(value),
+                  );
                 },
               ),
             ),
@@ -237,14 +309,11 @@ class _RideInputFormState extends State<RideInputForm> {
             Expanded(
               child: TextFormField(
                 controller: _fuelPriceController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*')),
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyInputFormatter()],
                 decoration: InputDecoration(
                   labelText: r'Gasolina (R$/L)',
-                  hintText: '5.89',
+                  hintText: '5,89',
                   prefixIcon: const Icon(Icons.local_gas_station_rounded),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -267,14 +336,11 @@ class _RideInputFormState extends State<RideInputForm> {
             Expanded(
               child: TextFormField(
                 controller: _maintenanceController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*')),
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyInputFormatter()],
                 decoration: InputDecoration(
                   labelText: r'Manutenção (R$/km)',
-                  hintText: '0.35',
+                  hintText: '0,35',
                   prefixIcon: const Icon(Icons.build_rounded),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -282,8 +348,7 @@ class _RideInputFormState extends State<RideInputForm> {
                   filled: true,
                 ),
                 onChanged: (value) {
-                  widget.controller
-                      .setMaintenanceCostPerKm(_parseInput(value));
+                  widget.controller.setMaintenanceCostPerKm(_parseInput(value));
                 },
               ),
             ),
@@ -291,14 +356,11 @@ class _RideInputFormState extends State<RideInputForm> {
             Expanded(
               child: TextFormField(
                 controller: _tariffController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*')),
-                ],
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyInputFormatter()],
                 decoration: InputDecoration(
                   labelText: r'Tarifa (R$/km)',
-                  hintText: '2.50',
+                  hintText: '2,50',
                   prefixIcon: const Icon(Icons.sell_rounded),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -328,10 +390,10 @@ class _RideInputFormState extends State<RideInputForm> {
                 setState(() {
                   _manualDistanceController.text = '';
                   _gpsDistanceController.text = '';
-                  _fuelConsumptionController.text = '10.0';
-                  _fuelPriceController.text = '5.50';
-                  _maintenanceController.text = '0.30';
-                  _tariffController.text = '2.50';
+                  _fuelConsumptionController.text = '10,0';
+                  _fuelPriceController.text = '5,50';
+                  _maintenanceController.text = '0,30';
+                  _tariffController.text = '2,50';
                 });
               },
               icon: const Icon(Icons.restart_alt_rounded),
@@ -348,10 +410,10 @@ class _RideInputFormState extends State<RideInputForm> {
                   tariffPerKm: 2.80,
                 );
                 setState(() {
-                  _fuelConsumptionController.text = '12.0';
-                  _fuelPriceController.text = '5.89';
-                  _maintenanceController.text = '0.35';
-                  _tariffController.text = '2.80';
+                  _fuelConsumptionController.text = '12,0';
+                  _fuelPriceController.text = '5,89';
+                  _maintenanceController.text = '0,35';
+                  _tariffController.text = '2,80';
                 });
               },
             ),
