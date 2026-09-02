@@ -45,24 +45,29 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ValorDrive',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'ValorDrive',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  'Cálculo de Corrida para Motoristas',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
+                  Text(
+                    'Cálculo de Corrida para Motoristas',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

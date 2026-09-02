@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'core/di/service_locator.dart';
 import 'features/ride_calculator/presentation/screens/ride_calculator_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Inicializa o Service Locator GetIt
-  setupServiceLocator();
+  // Inicializa o Service Locator GetIt e o armazenamento local
+  await setupServiceLocator();
   runApp(const ValorDriveApp());
 }
 

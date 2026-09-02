@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valor_drive/core/di/service_locator.dart';
 import 'package:valor_drive/core/services/gps_tracking_service.dart';
 import 'package:valor_drive/features/ride_calculator/presentation/controllers/ride_signal_controller.dart';
 import 'package:valor_drive/features/ride_calculator/presentation/screens/ride_calculator_screen.dart';
 
 void main() {
-  setUp(() {
-    if (getIt.isRegistered<GpsTrackingService>()) {
-      getIt.unregister<GpsTrackingService>();
-    }
-    if (getIt.isRegistered<RideSignalController>()) {
-      getIt.unregister<RideSignalController>();
-    }
-    setupServiceLocator();
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await getIt.reset();
+    await setupServiceLocator();
   });
 
   testWidgets('Deve renderizar a tela RideCalculatorScreen com os componentes de UI',

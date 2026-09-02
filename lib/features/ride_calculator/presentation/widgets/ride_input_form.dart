@@ -313,8 +313,11 @@ class _RideInputFormState extends State<RideInputForm> {
         const SizedBox(height: 20),
 
         // BOTÃO DE RESET RÁPIDO E ATALHOS
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             TextButton.icon(
               onPressed: () {
@@ -331,28 +334,23 @@ class _RideInputFormState extends State<RideInputForm> {
               icon: const Icon(Icons.restart_alt_rounded),
               label: const Text('Limpar Dados'),
             ),
-            Wrap(
-              spacing: 8,
-              children: [
-                ActionChip(
-                  avatar: const Icon(Icons.flash_on_rounded, size: 14),
-                  label: const Text('Preencher Padrão'),
-                  onPressed: () {
-                    widget.controller.updateOperationalData(
-                      fuelConsumptionKmPerLiter: 12.0,
-                      fuelPricePerLiter: 5.89,
-                      maintenanceCostPerKm: 0.35,
-                      tariffPerKm: 2.80,
-                    );
-                    setState(() {
-                      _fuelConsumptionController.text = '12.0';
-                      _fuelPriceController.text = '5.89';
-                      _maintenanceController.text = '0.35';
-                      _tariffController.text = '2.80';
-                    });
-                  },
-                ),
-              ],
+            ActionChip(
+              avatar: const Icon(Icons.flash_on_rounded, size: 14),
+              label: const Text('Preencher Padrão'),
+              onPressed: () {
+                widget.controller.updateOperationalData(
+                  fuelConsumptionKmPerLiter: 12.0,
+                  fuelPricePerLiter: 5.89,
+                  maintenanceCostPerKm: 0.35,
+                  tariffPerKm: 2.80,
+                );
+                setState(() {
+                  _fuelConsumptionController.text = '12.0';
+                  _fuelPriceController.text = '5.89';
+                  _maintenanceController.text = '0.35';
+                  _tariffController.text = '2.80';
+                });
+              },
             ),
           ],
         ),

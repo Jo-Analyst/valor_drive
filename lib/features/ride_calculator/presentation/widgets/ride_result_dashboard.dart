@@ -89,29 +89,28 @@ class RideResultDashboard extends StatelessWidget {
                 child: Column(
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              isProfitable
-                                  ? Icons.payments_rounded
-                                  : Icons.warning_amber_rounded,
-                              color: profitColor,
-                              size: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'LUCRO LÍQUIDO',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: profitColor,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          isProfitable
+                              ? Icons.payments_rounded
+                              : Icons.warning_amber_rounded,
+                          color: profitColor,
+                          size: 22,
                         ),
-                        if (!isZero)
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'LUCRO LÍQUIDO',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: profitColor,
+                              letterSpacing: 1.1,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (!isZero) ...[
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
@@ -127,6 +126,7 @@ class RideResultDashboard extends StatelessWidget {
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -175,50 +175,53 @@ class RideResultDashboard extends StatelessWidget {
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: costColor.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.trending_down_rounded,
-                            color: costColor,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CUSTO OPERACIONAL TOTAL',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: costColor,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              'Combustível + Manutenção',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Text(
-                      currencyFormat.format(result.totalOperationalCost),
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: costColor.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.trending_down_rounded,
                         color: costColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CUSTO OPERACIONAL TOTAL',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: costColor,
+                              letterSpacing: 0.5,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Combustível + Manutenção',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        currencyFormat.format(result.totalOperationalCost),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: costColor,
+                        ),
                       ),
                     ),
                   ],
@@ -289,21 +292,20 @@ class RideResultDashboard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: iconColor),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: theme.colorScheme.onSurface,
-              ),
+        Icon(icon, size: 18, color: iconColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: theme.colorScheme.onSurface,
             ),
-          ],
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
+        const SizedBox(width: 8),
         Text(
           value,
           style: theme.textTheme.bodyMedium?.copyWith(

@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valor_drive/core/di/service_locator.dart';
+import 'package:valor_drive/core/services/operational_cost_storage_service.dart';
 import 'package:valor_drive/features/ride_calculator/domain/enums/calculation_mode.dart';
 import 'package:valor_drive/features/ride_calculator/domain/models/ride_input.dart';
 import 'package:valor_drive/features/ride_calculator/domain/models/ride_result.dart';
@@ -43,14 +45,6 @@ void main() {
 
   group('RideResult Math Tests', () {
     test('Deve calcular corretamente todos os custos, valor bruto e lucro líquido', () {
-      // Cenário:
-      // Distância: 20 km
-      // Consumo: 10 km/L -> usa 2 Litros
-      // Preço Combustível: R$ 5,00/L -> Custo Combustível = R$ 10,00
-      // Custo Manutenção/km: R$ 0,50/km -> Custo Manutenção = R$ 10,00
-      // Custo Operacional Total = R$ 20,00
-      // Tarifa/km: R$ 3,00/km -> Valor Bruto = R$ 60,00
-      // Lucro Líquido = R$ 60,00 - R$ 20,00 = R$ 40,00
       const input = RideInput(
         calculationMode: CalculationMode.manual,
         manualDistanceKm: 20.0,
@@ -96,11 +90,9 @@ void main() {
     });
 
     test('Deve recalcular reativamente os Signals computados quando uma entrada mudar', () {
-      // Estado inicial
       expect(controller.effectiveDistanceKm.value, equals(0.0));
       expect(controller.netProfit.value, equals(0.0));
 
-      // Configura dados operacionais do veículo
       controller.updateOperationalData(
         fuelConsumptionKmPerLiter: 10.0,
         fuelPricePerLiter: 6.0,
@@ -108,14 +100,8 @@ void main() {
         tariffPerKm: 3.0,
       );
 
-      // Altera distância manual para 10 km
       controller.setManualDistance(10.0);
 
-      // Custo Combustível: (10 / 10) * 6 = R$ 6,00
-      // Custo Manutenção: 10 * 0,40 = R$ 4,00
-      // Custo Operacional Total = R$ 10,00
-      // Valor Bruto: 10 * 3,00 = R$ 30,00
-      // Lucro Líquido = R$ 20,00
       expect(controller.effectiveDistanceKm.value, equals(10.0));
       expect(controller.fuelCost.value, equals(6.0));
       expect(controller.maintenanceCost.value, equals(4.0));
@@ -128,18 +114,42 @@ void main() {
       controller.setManualDistance(10.0);
       controller.updateGpsDistance(18.5);
 
-      // Por padrão está no modo Manual
       expect(controller.effectiveDistanceKm.value, equals(10.0));
 
-      // Altera para modo GPS
       controller.setCalculationMode(CalculationMode.gps);
       expect(controller.effectiveDistanceKm.value, equals(18.5));
     });
   });
 
+  group('OperationalCostStorageService Persistence Tests', () {
+    test('Deve salvar e carregar os dados operacionais no dispositivo via SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final storageService = OperationalCostStorageService(prefs);
+
+      final controller1 = RideSignalController(storageService);
+      controller1.updateOperationalData(
+        fuelConsumptionKmPerLiter: 14.5,
+        fuelPricePerLiter: 6.29,
+        maintenanceCostPerKm: 0.45,
+        tariffPerKm: 3.20,
+      );
+
+      // Instancia um novo Controller simulando reabrir o aplicativo
+      final controller2 = RideSignalController(storageService);
+
+      expect(controller2.fuelConsumptionKmPerLiterSignal.value, equals(14.5));
+      expect(controller2.fuelPricePerLiterSignal.value, equals(6.29));
+      expect(controller2.maintenanceCostPerKmSignal.value, equals(0.45));
+      expect(controller2.tariffPerKmSignal.value, equals(3.20));
+    });
+  });
+
   group('GetIt Service Locator Tests', () {
-    test('Deve registrar e fornecer a instância do RideSignalController via GetIt', () {
-      setupServiceLocator();
+    test('Deve registrar e fornecer a instância do RideSignalController via GetIt', () async {
+      SharedPreferences.setMockInitialValues({});
+      await getIt.reset();
+      await setupServiceLocator();
 
       final controllerInstance = getIt<RideSignalController>();
       expect(controllerInstance, isA<RideSignalController>());

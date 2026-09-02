@@ -29,14 +29,18 @@ class CalculationModeSelector extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Modo de Medição',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurfaceVariant,
+            Expanded(
+              child: Text(
+                'Modo de Medição',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (currentMode == CalculationMode.gps)
+            if (currentMode == CalculationMode.gps) ...[
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -73,6 +77,7 @@ class CalculationModeSelector extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
           ],
         ),
         const SizedBox(height: 8),

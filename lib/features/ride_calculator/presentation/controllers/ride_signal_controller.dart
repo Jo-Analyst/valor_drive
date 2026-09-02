@@ -1,4 +1,5 @@
 import 'package:signals_flutter/signals_flutter.dart';
+import '../../../../core/services/operational_cost_storage_service.dart';
 import '../../domain/enums/calculation_mode.dart';
 import '../../domain/models/ride_input.dart';
 import '../../domain/models/ride_result.dart';
@@ -8,6 +9,31 @@ import '../../domain/models/ride_result.dart';
 /// Mantém o estado reativo das entradas do usuário e recomputa automaticamente
 /// os custos operacionais, o valor a cobrar e o lucro líquido através de [computed()].
 class RideSignalController {
+  final OperationalCostStorageService? _storageService;
+
+  RideSignalController([this._storageService]) {
+    loadSavedOperationalCosts();
+  }
+
+  /// Carrega as configurações de custos operacionais salvas do dispositivo.
+  void loadSavedOperationalCosts() {
+    if (_storageService == null) return;
+    final savedData = _storageService!.loadOperationalCosts();
+    fuelConsumptionKmPerLiterSignal.value = savedData.fuelConsumptionKmPerLiter;
+    fuelPricePerLiterSignal.value = savedData.fuelPricePerLiter;
+    maintenanceCostPerKmSignal.value = savedData.maintenanceCostPerKm;
+    tariffPerKmSignal.value = savedData.tariffPerKm;
+  }
+
+  void _persistOperationalCosts() {
+    _storageService?.saveOperationalCosts(
+      fuelConsumptionKmPerLiter: fuelConsumptionKmPerLiterSignal.value,
+      fuelPricePerLiter: fuelPricePerLiterSignal.value,
+      maintenanceCostPerKm: maintenanceCostPerKmSignal.value,
+      tariffPerKm: tariffPerKmSignal.value,
+    );
+  }
+
   // ===========================================================================
   // SIGNALS DE ENTRADA (MUTAÇÃO DE ESTADO)
   // ===========================================================================
@@ -120,21 +146,25 @@ class RideSignalController {
   /// Atualiza o consumo médio do veículo (km/L).
   void setFuelConsumption(double kmPerLiter) {
     fuelConsumptionKmPerLiterSignal.value = kmPerLiter < 0 ? 0.0 : kmPerLiter;
+    _persistOperationalCosts();
   }
 
   /// Atualiza o preço do combustível (R$/L).
   void setFuelPrice(double pricePerLiter) {
     fuelPricePerLiterSignal.value = pricePerLiter < 0 ? 0.0 : pricePerLiter;
+    _persistOperationalCosts();
   }
 
   /// Atualiza o custo de manutenção/depreciação por KM (R$/km).
   void setMaintenanceCostPerKm(double costPerKm) {
     maintenanceCostPerKmSignal.value = costPerKm < 0 ? 0.0 : costPerKm;
+    _persistOperationalCosts();
   }
 
   /// Atualiza a tarifa desejada por KM (R$/km).
   void setTariffPerKm(double tariff) {
     tariffPerKmSignal.value = tariff < 0 ? 0.0 : tariff;
+    _persistOperationalCosts();
   }
 
   /// Atualiza em lote as configurações operacionais do carro.
@@ -146,18 +176,22 @@ class RideSignalController {
   }) {
     batch(() {
       if (fuelConsumptionKmPerLiter != null) {
-        setFuelConsumption(fuelConsumptionKmPerLiter);
+        fuelConsumptionKmPerLiterSignal.value =
+            fuelConsumptionKmPerLiter < 0 ? 0.0 : fuelConsumptionKmPerLiter;
       }
       if (fuelPricePerLiter != null) {
-        setFuelPrice(fuelPricePerLiter);
+        fuelPricePerLiterSignal.value =
+            fuelPricePerLiter < 0 ? 0.0 : fuelPricePerLiter;
       }
       if (maintenanceCostPerKm != null) {
-        setMaintenanceCostPerKm(maintenanceCostPerKm);
+        maintenanceCostPerKmSignal.value =
+            maintenanceCostPerKm < 0 ? 0.0 : maintenanceCostPerKm;
       }
       if (tariffPerKm != null) {
-        setTariffPerKm(tariffPerKm);
+        tariffPerKmSignal.value = tariffPerKm < 0 ? 0.0 : tariffPerKm;
       }
     });
+    _persistOperationalCosts();
   }
 
   /// Reseta todos os valores para o estado padrão inicial.
@@ -171,6 +205,7 @@ class RideSignalController {
       maintenanceCostPerKmSignal.value = 0.30;
       tariffPerKmSignal.value = 2.50;
     });
+    _persistOperationalCosts();
   }
 
   /// Libera recursos e descarta os sinais quando não forem mais necessários.
