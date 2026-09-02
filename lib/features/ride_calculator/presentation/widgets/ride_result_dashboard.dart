@@ -52,7 +52,7 @@ class RideResultDashboard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -63,7 +63,7 @@ class RideResultDashboard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -82,7 +82,7 @@ class RideResultDashboard extends StatelessWidget {
                   color: profitBgColor,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: profitColor.withOpacity(0.3),
+                    color: profitColor.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -150,7 +150,7 @@ class RideResultDashboard extends StatelessWidget {
                               ? '✓ Corrida lucrativa para o bolso'
                               : '⚠️ Atenção: Corrida no prejuízo!'),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: profitColor.withOpacity(0.9),
+                        color: profitColor.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -171,7 +171,7 @@ class RideResultDashboard extends StatelessWidget {
                   color: costBgColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: costColor.withOpacity(0.3),
+                    color: costColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -179,7 +179,7 @@ class RideResultDashboard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: costColor.withOpacity(0.15),
+                        color: costColor.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(

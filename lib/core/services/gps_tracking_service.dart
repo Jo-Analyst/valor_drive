@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../features/ride_calculator/domain/enums/calculation_mode.dart';
 import '../../features/ride_calculator/presentation/controllers/ride_signal_controller.dart';
@@ -18,6 +19,9 @@ class GpsTrackingService {
 
   /// Sinal com o status legível da conexão de GPS.
   final Signal<String> gpsStatusSignal = signal<String>('GPS Inativo');
+
+  /// Sinal com a lista de coordenadas geográfica (LatLng) percorridas na rota.
+  final Signal<List<LatLng>> routePointsSignal = signal<List<LatLng>>([]);
 
   GpsTrackingService(this._controller);
 
@@ -64,6 +68,11 @@ class GpsTrackingService {
         ),
       );
 
+      final initialPoint = LatLng(_lastPosition!.latitude, _lastPosition!.longitude);
+      if (routePointsSignal.value.isEmpty) {
+        routePointsSignal.value = [initialPoint];
+      }
+
       // Alterna automaticamente o controller para o modo GPS
       _controller.setCalculationMode(CalculationMode.gps);
 
@@ -76,6 +85,8 @@ class GpsTrackingService {
         locationSettings: locationSettings,
       ).listen(
         (Position newPosition) {
+          final newPoint = LatLng(newPosition.latitude, newPosition.longitude);
+
           if (_lastPosition != null) {
             final distanceBetweenMeters = Geolocator.distanceBetween(
               _lastPosition!.latitude,
@@ -91,6 +102,7 @@ class GpsTrackingService {
             _controller.updateGpsDistance(km);
           }
 
+          routePointsSignal.value = [...routePointsSignal.value, newPoint];
           _lastPosition = newPosition;
           gpsStatusSignal.value = 'Rastreando em Tempo Real';
         },
@@ -118,11 +130,15 @@ class GpsTrackingService {
     gpsStatusSignal.value = 'GPS Pausado';
   }
 
-  /// Reinicia o hodômetro de GPS para 0.0 KM.
-  Future<void> resetTracking() async {
-    await pauseTracking();
+  /// Reinicia o hodômetro de GPS para 0.0 KM e limpa os pontos no mapa.
+  void resetTracking() {
+    // Cancel any active GPS subscription without awaiting.
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
+    isTrackingSignal.value = false;
     _accumulatedDistanceMeters = 0.0;
     _lastPosition = null;
+    routePointsSignal.value = [];
     _controller.updateGpsDistance(0.0);
     gpsStatusSignal.value = 'GPS Zerado';
   }
@@ -133,6 +149,21 @@ class GpsTrackingService {
     final currentKm = _accumulatedDistanceMeters / 1000.0;
     _controller.updateGpsDistance(currentKm);
     _controller.setCalculationMode(CalculationMode.gps);
+
+    final currentPoints = List<LatLng>.from(routePointsSignal.value);
+    final basePoint = currentPoints.isNotEmpty
+        ? currentPoints.last
+        : const LatLng(-23.550520, -46.633308); // Padrão centro de SP
+
+    if (currentPoints.isEmpty) {
+      currentPoints.add(basePoint);
+    }
+
+    final nextLat = basePoint.latitude + (0.003 * addKm);
+    final nextLng = basePoint.longitude + (0.004 * addKm);
+    currentPoints.add(LatLng(nextLat, nextLng));
+
+    routePointsSignal.value = currentPoints;
     gpsStatusSignal.value = 'GPS Simulado (+${addKm}km)';
   }
 
@@ -140,5 +171,6 @@ class GpsTrackingService {
     _positionSubscription?.cancel();
     isTrackingSignal.dispose();
     gpsStatusSignal.dispose();
+    routePointsSignal.dispose();
   }
 }

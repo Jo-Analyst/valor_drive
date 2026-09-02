@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../domain/enums/calculation_mode.dart';
 import '../controllers/ride_signal_controller.dart';
+import 'ride_gps_map_widget.dart';
 
 /// Formulário de entrada ultra rápido para o motorista inserir ou alterar
 /// os dados operacionais do carro e da corrida.
@@ -133,10 +134,10 @@ class _RideInputFormState extends State<RideInputForm> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.3),
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -190,6 +191,8 @@ class _RideInputFormState extends State<RideInputForm> {
                     widget.controller.updateGpsDistance(_parseInput(value));
                   },
                 ),
+                const SizedBox(height: 16),
+                const RideGpsMapWidget(),
               ],
             ),
           ),

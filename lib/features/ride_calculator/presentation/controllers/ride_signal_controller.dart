@@ -18,7 +18,7 @@ class RideSignalController {
   /// Carrega as configurações de custos operacionais salvas do dispositivo.
   void loadSavedOperationalCosts() {
     if (_storageService == null) return;
-    final savedData = _storageService!.loadOperationalCosts();
+    final savedData = _storageService.loadOperationalCosts();
     fuelConsumptionKmPerLiterSignal.value = savedData.fuelConsumptionKmPerLiter;
     fuelPricePerLiterSignal.value = savedData.fuelPricePerLiter;
     maintenanceCostPerKmSignal.value = savedData.maintenanceCostPerKm;

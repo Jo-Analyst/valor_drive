@@ -111,7 +111,7 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Padding(

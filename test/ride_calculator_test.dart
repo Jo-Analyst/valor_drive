@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valor_drive/core/di/service_locator.dart';
+import 'package:valor_drive/core/services/gps_tracking_service.dart';
 import 'package:valor_drive/core/services/operational_cost_storage_service.dart';
 import 'package:valor_drive/features/ride_calculator/domain/enums/calculation_mode.dart';
 import 'package:valor_drive/features/ride_calculator/domain/models/ride_input.dart';
@@ -118,6 +119,23 @@ void main() {
 
       controller.setCalculationMode(CalculationMode.gps);
       expect(controller.effectiveDistanceKm.value, equals(18.5));
+    });
+  });
+
+  group('GpsTrackingService Route Points Tests', () {
+    test('Deve acumular pontos de coordenadas na rota ao simular incremento de distância GPS', () {
+      final controller = RideSignalController();
+      final gpsService = GpsTrackingService(controller);
+
+      expect(gpsService.routePointsSignal.value, isEmpty);
+
+      gpsService.simulateDistanceIncrement(5.0);
+
+      expect(gpsService.routePointsSignal.value.length, equals(2));
+      expect(controller.calculationModeSignal.value, equals(CalculationMode.gps));
+
+      gpsService.resetTracking();
+      expect(gpsService.routePointsSignal.value, isEmpty);
     });
   });
 
