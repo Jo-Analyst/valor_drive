@@ -41,6 +41,7 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
+  icons_launcher: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -94,3 +95,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+icons_launcher:
+  image_path: "assets/images/icon.png"
+  platforms:
+    android:
+      enable: true
+    ios:
+      enable: true
