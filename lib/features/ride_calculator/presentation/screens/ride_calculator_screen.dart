@@ -4,6 +4,7 @@ import '../controllers/ride_signal_controller.dart';
 import '../widgets/calculation_mode_selector.dart';
 import '../widgets/ride_input_form.dart';
 import '../widgets/ride_result_dashboard.dart';
+import '../../../ride_history/presentation/screens/ride_history_screen.dart';
 
 /// Tela principal do aplicativo de cálculo de corrida para motoristas.
 ///
@@ -52,10 +53,7 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
                 children: [
                   Text(
                     'ValorDrive',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
@@ -72,6 +70,18 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Histórico de corridas',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RideHistoryScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline_rounded),
             tooltip: 'Sobre as fórmulas',
@@ -111,7 +121,9 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.4,
+                    ),
                   ),
                 ),
                 child: Padding(
@@ -124,6 +136,28 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final saved = await _controller.saveCurrentRideToHistory();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  saved
+                      ? 'Corrida salva com sucesso!'
+                      : 'Não foi possível salvar a corrida (verifique se há distância percorrida)',
+                ),
+                backgroundColor: saved ? Colors.green : Colors.orange,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+        icon: const Icon(Icons.save),
+        label: const Text('Salvar Corrida'),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
     );
   }

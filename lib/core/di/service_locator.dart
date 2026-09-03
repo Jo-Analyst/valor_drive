@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/gps_tracking_service.dart';
 import '../services/operational_cost_storage_service.dart';
+import '../services/ride_history_storage_service.dart';
 import '../../features/ride_calculator/presentation/controllers/ride_signal_controller.dart';
 
 /// Instância global do Service Locator [GetIt].
@@ -24,10 +25,20 @@ Future<void> setupServiceLocator() async {
     );
   }
 
-  // 3. Registra o RideSignalController
+  // 3. Registra o RideHistoryStorageService (Persistência de Histórico)
+  if (!getIt.isRegistered<RideHistoryStorageService>()) {
+    getIt.registerLazySingleton<RideHistoryStorageService>(
+      () => RideHistoryStorageService(getIt<SharedPreferences>()),
+    );
+  }
+
+  // 4. Registra o RideSignalController
   if (!getIt.isRegistered<RideSignalController>()) {
     getIt.registerLazySingleton<RideSignalController>(
-      () => RideSignalController(getIt<OperationalCostStorageService>()),
+      () => RideSignalController(
+        getIt<OperationalCostStorageService>(),
+        getIt<RideHistoryStorageService>(),
+      ),
       dispose: (controller) => controller.dispose(),
     );
   }

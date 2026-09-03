@@ -1,8 +1,10 @@
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../../core/services/operational_cost_storage_service.dart';
+import '../../../../core/services/ride_history_storage_service.dart';
 import '../../domain/enums/calculation_mode.dart';
 import '../../domain/models/ride_input.dart';
 import '../../domain/models/ride_result.dart';
+import '../../domain/models/ride_history.dart';
 
 /// Controller reativo baseado na biblioteca [Signals].
 ///
@@ -10,8 +12,9 @@ import '../../domain/models/ride_result.dart';
 /// os custos operacionais, o valor a cobrar e o lucro líquido através de [computed()].
 class RideSignalController {
   final OperationalCostStorageService? _storageService;
+  final RideHistoryStorageService? _historyService;
 
-  RideSignalController([this._storageService]) {
+  RideSignalController([this._storageService, this._historyService]) {
     loadSavedOperationalCosts();
   }
 
@@ -39,8 +42,9 @@ class RideSignalController {
   // ===========================================================================
 
   /// Modo selecionado para obter a distância (GPS vs Entrada Manual).
-  final Signal<CalculationMode> calculationModeSignal =
-      signal<CalculationMode>(CalculationMode.manual);
+  final Signal<CalculationMode> calculationModeSignal = signal<CalculationMode>(
+    CalculationMode.manual,
+  );
 
   /// Distância calculada dinamicamente pelo GPS em tempo real (km).
   final Signal<double> gpsDistanceKmSignal = signal<double>(0.0);
@@ -176,16 +180,19 @@ class RideSignalController {
   }) {
     batch(() {
       if (fuelConsumptionKmPerLiter != null) {
-        fuelConsumptionKmPerLiterSignal.value =
-            fuelConsumptionKmPerLiter < 0 ? 0.0 : fuelConsumptionKmPerLiter;
+        fuelConsumptionKmPerLiterSignal.value = fuelConsumptionKmPerLiter < 0
+            ? 0.0
+            : fuelConsumptionKmPerLiter;
       }
       if (fuelPricePerLiter != null) {
-        fuelPricePerLiterSignal.value =
-            fuelPricePerLiter < 0 ? 0.0 : fuelPricePerLiter;
+        fuelPricePerLiterSignal.value = fuelPricePerLiter < 0
+            ? 0.0
+            : fuelPricePerLiter;
       }
       if (maintenanceCostPerKm != null) {
-        maintenanceCostPerKmSignal.value =
-            maintenanceCostPerKm < 0 ? 0.0 : maintenanceCostPerKm;
+        maintenanceCostPerKmSignal.value = maintenanceCostPerKm < 0
+            ? 0.0
+            : maintenanceCostPerKm;
       }
       if (tariffPerKm != null) {
         tariffPerKmSignal.value = tariffPerKm < 0 ? 0.0 : tariffPerKm;
@@ -206,6 +213,29 @@ class RideSignalController {
       tariffPerKmSignal.value = 2.50;
     });
     _persistOperationalCosts();
+  }
+
+  /// Salva a corrida atual no histórico
+  Future<bool> saveCurrentRideToHistory() async {
+    if (_historyService == null) return false;
+
+    final currentResult = rideResult.value;
+    final currentDistance = effectiveDistanceKm.value;
+
+    // Só salva se houver distância percorrida
+    if (currentDistance <= 0) return false;
+
+    final rideHistory = RideHistory.fromRideData(
+      dateTime: DateTime.now(),
+      distanceKm: currentDistance,
+      fuelCost: currentResult.fuelCost,
+      maintenanceCost: currentResult.maintenanceCost,
+      totalOperationalCost: currentResult.totalOperationalCost,
+      grossAmount: currentResult.grossAmount,
+      netProfit: currentResult.netProfit,
+    );
+
+    return await _historyService.saveRide(rideHistory);
   }
 
   /// Libera recursos e descarta os sinais quando não forem mais necessários.
