@@ -472,7 +472,7 @@ class _RideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
+    final timeFormat = DateFormat('HH:mm:ss');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
