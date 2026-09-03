@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'core/di/service_locator.dart';
 import 'core/services/background_execution_service.dart';
 import 'features/ride_calculator/presentation/screens/ride_calculator_screen.dart';
@@ -14,6 +16,18 @@ Future<void> main() async {
     await initializeBackgroundExecution();
   }
   runApp(const ValorDriveApp());
+  if (Platform.isAndroid) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_requestNotificationPermission());
+    });
+  }
+}
+
+Future<void> _requestNotificationPermission() async {
+  final permission = Permission.notification;
+  if (!await permission.isGranted && !await permission.isPermanentlyDenied) {
+    await permission.request();
+  }
 }
 
 @pragma('vm:entry-point')
