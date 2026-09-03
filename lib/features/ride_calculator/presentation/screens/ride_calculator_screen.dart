@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/services/gps_tracking_service.dart';
 import '../controllers/ride_signal_controller.dart';
 import '../widgets/calculation_mode_selector.dart';
 import '../widgets/ride_input_form.dart';
@@ -16,13 +20,74 @@ class RideCalculatorScreen extends StatefulWidget {
   State<RideCalculatorScreen> createState() => _RideCalculatorScreenState();
 }
 
-class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
+class _RideCalculatorScreenState extends State<RideCalculatorScreen>
+    with WidgetsBindingObserver {
   late final RideSignalController _controller;
+  late final GpsTrackingService _gpsService;
+  late final void Function() _disposeTrackingEffect;
+  bool _isAppResumed = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = getIt<RideSignalController>();
+    _gpsService = getIt<GpsTrackingService>();
+    _disposeTrackingEffect = effect(() {
+      _gpsService.isTrackingSignal.value;
+      _syncWakelock();
+    });
+  }
+
+  void _syncWakelock() {
+    if (_isAppResumed && _gpsService.isTrackingSignal.value) {
+      WakelockPlus.enable();
+    } else {
+      WakelockPlus.disable();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _isAppResumed = true;
+      _syncWakelock();
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _isAppResumed = false;
+      WakelockPlus.disable();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _disposeTrackingEffect();
+    WakelockPlus.disable();
+    super.dispose();
+  }
+
+  Future<void> _toggleOverlay() async {
+    final isActive = await FlutterOverlayWindow.isActive();
+    if (isActive) {
+      await FlutterOverlayWindow.closeOverlay();
+      return;
+    }
+
+    var hasPermission = await FlutterOverlayWindow.isPermissionGranted();
+    if (!hasPermission) {
+      hasPermission = await FlutterOverlayWindow.requestPermission() ?? false;
+    }
+    if (!hasPermission || !mounted) return;
+
+    await FlutterOverlayWindow.showOverlay(
+      width: 300,
+      height: 100,
+      enableDrag: true,
+      overlayTitle: 'ValorDrive',
+      overlayContent: 'Calculadora ativa',
+    );
   }
 
   @override
@@ -70,6 +135,11 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_in_picture_alt_rounded),
+            tooltip: 'Sobrepor a outros aplicativos',
+            onPressed: _toggleOverlay,
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Histórico de corridas',
@@ -140,6 +210,9 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final saved = await _controller.saveCurrentRideToHistory();
+          if (saved) {
+            _gpsService.resetTracking();
+          }
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

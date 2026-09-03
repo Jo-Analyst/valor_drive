@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import '../../features/ride_calculator/domain/enums/calculation_mode.dart';
 import '../../features/ride_calculator/presentation/controllers/ride_signal_controller.dart';
 
@@ -11,6 +13,9 @@ class GpsTrackingService {
   final RideSignalController _controller;
 
   StreamSubscription<Position>? _positionSubscription;
+  StreamSubscription<Map<String, dynamic>?>? _backgroundUpdateSubscription;
+  final FlutterBackgroundService _backgroundService =
+      FlutterBackgroundService();
   Position? _lastPosition;
   double _accumulatedDistanceMeters = 0.0;
 
@@ -23,7 +28,27 @@ class GpsTrackingService {
   /// Sinal com a lista de coordenadas geográfica (LatLng) percorridas na rota.
   final Signal<List<LatLng>> routePointsSignal = signal<List<LatLng>>([]);
 
-  GpsTrackingService(this._controller);
+  GpsTrackingService(this._controller) {
+    if (Platform.isAndroid) {
+      _backgroundUpdateSubscription = _backgroundService.on('gpsUpdate').listen(
+        (event) {
+          final distanceKm = (event?['distanceKm'] as num?)?.toDouble();
+          if (distanceKm != null) {
+            _controller.updateGpsDistance(distanceKm);
+          }
+
+          final latitude = (event?['latitude'] as num?)?.toDouble();
+          final longitude = (event?['longitude'] as num?)?.toDouble();
+          if (latitude != null && longitude != null) {
+            routePointsSignal.value = [
+              ...routePointsSignal.value,
+              LatLng(latitude, longitude),
+            ];
+          }
+        },
+      );
+    }
+  }
 
   /// Inicia o rastreamento em tempo real da posição GPS.
   Future<bool> startTracking() async {
@@ -68,7 +93,10 @@ class GpsTrackingService {
         ),
       );
 
-      final initialPoint = LatLng(_lastPosition!.latitude, _lastPosition!.longitude);
+      final initialPoint = LatLng(
+        _lastPosition!.latitude,
+        _lastPosition!.longitude,
+      );
       if (routePointsSignal.value.isEmpty) {
         routePointsSignal.value = [initialPoint];
       }
@@ -81,36 +109,53 @@ class GpsTrackingService {
         distanceFilter: 5, // Atualiza a cada 5 metros percorridos
       );
 
-      _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: locationSettings,
-      ).listen(
-        (Position newPosition) {
-          final newPoint = LatLng(newPosition.latitude, newPosition.longitude);
+      _positionSubscription = Platform.isAndroid
+          ? null
+          : Geolocator.getPositionStream(
+              locationSettings: locationSettings,
+            ).listen(
+              (Position newPosition) {
+                final newPoint = LatLng(
+                  newPosition.latitude,
+                  newPosition.longitude,
+                );
 
-          if (_lastPosition != null) {
-            final distanceBetweenMeters = Geolocator.distanceBetween(
-              _lastPosition!.latitude,
-              _lastPosition!.longitude,
-              newPosition.latitude,
-              newPosition.longitude,
+                if (_lastPosition != null) {
+                  final distanceBetweenMeters = Geolocator.distanceBetween(
+                    _lastPosition!.latitude,
+                    _lastPosition!.longitude,
+                    newPosition.latitude,
+                    newPosition.longitude,
+                  );
+
+                  _accumulatedDistanceMeters += distanceBetweenMeters;
+                  final km = _accumulatedDistanceMeters / 1000.0;
+
+                  // Atualiza reativamente o sinal de distância GPS no Controller
+                  _controller.updateGpsDistance(km);
+                }
+
+                routePointsSignal.value = [
+                  ...routePointsSignal.value,
+                  newPoint,
+                ];
+                _lastPosition = newPosition;
+                gpsStatusSignal.value = 'Rastreando em Tempo Real';
+              },
+              onError: (error) {
+                gpsStatusSignal.value = 'Erro no Sinal de GPS';
+                isTrackingSignal.value = false;
+              },
             );
 
-            _accumulatedDistanceMeters += distanceBetweenMeters;
-            final km = _accumulatedDistanceMeters / 1000.0;
-
-            // Atualiza reativamente o sinal de distância GPS no Controller
-            _controller.updateGpsDistance(km);
-          }
-
-          routePointsSignal.value = [...routePointsSignal.value, newPoint];
-          _lastPosition = newPosition;
-          gpsStatusSignal.value = 'Rastreando em Tempo Real';
-        },
-        onError: (error) {
-          gpsStatusSignal.value = 'Erro no Sinal de GPS';
-          isTrackingSignal.value = false;
-        },
-      );
+      if (Platform.isAndroid) {
+        if (!await _backgroundService.isRunning()) {
+          await _backgroundService.startService();
+        }
+        _backgroundService.invoke('startGpsTracking', {
+          'distanceKm': _accumulatedDistanceMeters / 1000,
+        });
+      }
 
       isTrackingSignal.value = true;
       gpsStatusSignal.value = 'Rastreando em Tempo Real';
@@ -126,6 +171,9 @@ class GpsTrackingService {
   Future<void> pauseTracking() async {
     await _positionSubscription?.cancel();
     _positionSubscription = null;
+    if (Platform.isAndroid) {
+      _backgroundService.invoke('stopGpsTracking');
+    }
     isTrackingSignal.value = false;
     gpsStatusSignal.value = 'GPS Pausado';
   }
@@ -135,6 +183,9 @@ class GpsTrackingService {
     // Cancel any active GPS subscription without awaiting.
     _positionSubscription?.cancel();
     _positionSubscription = null;
+    if (Platform.isAndroid) {
+      _backgroundService.invoke('stopGpsTracking');
+    }
     isTrackingSignal.value = false;
     _accumulatedDistanceMeters = 0.0;
     _lastPosition = null;
@@ -169,6 +220,7 @@ class GpsTrackingService {
 
   void dispose() {
     _positionSubscription?.cancel();
+    _backgroundUpdateSubscription?.cancel();
     isTrackingSignal.dispose();
     gpsStatusSignal.dispose();
     routePointsSignal.dispose();

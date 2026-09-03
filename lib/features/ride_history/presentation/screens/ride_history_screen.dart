@@ -24,15 +24,17 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
   void initState() {
     super.initState();
     _historyService = getIt<RideHistoryStorageService>();
+    _ridesFuture = Future.value(const <RideHistory>[]);
+    _statsFuture = Future.value(const RideHistoryStats());
     _loadData();
   }
 
-  void _loadData() async {
+  Future<void> _loadData() async {
     _ridesFuture = _historyService.loadRideHistory();
     _allRides = await _ridesFuture;
     _filteredRides = _filterRidesByMonth(_allRides, _selectedMonth);
     _statsFuture = _calculateStatsForFilteredRides();
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   List<RideHistory> _filterRidesByMonth(
@@ -111,7 +113,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
   }
 
   Future<void> _refreshData() async {
-    _loadData();
+    await _loadData();
   }
 
   Future<void> _deleteRide(String rideId) async {
@@ -193,13 +195,16 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: Column(
-          children: [
-            _buildStatsSection(),
-            Expanded(child: _buildRidesList()),
-          ],
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          child: Column(
+            children: [
+              _buildStatsSection(),
+              Expanded(child: _buildRidesList()),
+            ],
+          ),
         ),
       ),
     );
@@ -488,11 +493,6 @@ class _RideCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Text(
-            //   timeFormat.format(ride.dateTime),
-            //   style: TextStyle(color: Colors.grey[600]),
-            // ),
-            // const SizedBox(height: 4),
             Wrap(
               spacing: 8,
               runSpacing: 2,

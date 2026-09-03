@@ -1,12 +1,68 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'core/di/service_locator.dart';
+import 'core/services/background_execution_service.dart';
 import 'features/ride_calculator/presentation/screens/ride_calculator_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Inicializa o Service Locator GetIt e o armazenamento local
   await setupServiceLocator();
+  if (Platform.isAndroid) {
+    await initializeBackgroundExecution();
+  }
   runApp(const ValorDriveApp());
+}
+
+@pragma('vm:entry-point')
+void overlayMain() {
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: _ValorDriveOverlay(),
+    ),
+  );
+}
+
+class _ValorDriveOverlay extends StatelessWidget {
+  const _ValorDriveOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F766E),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.calculate_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              const Text(
+                'ValorDrive',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Fechar sobreposição',
+                onPressed: FlutterOverlayWindow.closeOverlay,
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ValorDriveApp extends StatelessWidget {
