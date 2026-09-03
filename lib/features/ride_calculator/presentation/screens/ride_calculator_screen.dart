@@ -82,11 +82,16 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen>
     if (!hasPermission || !mounted) return;
 
     await FlutterOverlayWindow.showOverlay(
-      width: 300,
-      height: 100,
       enableDrag: true,
-      overlayTitle: 'ValorDrive',
-      overlayContent: 'Calculadora ativa',
+      overlayTitle: "ValorDrive",
+      overlayContent: "Overlay ativo em segundo plano",
+      flag: OverlayFlag.defaultFlag,
+      visibility: NotificationVisibility.visibilityPublic,
+      positionGravity: PositionGravity.auto,
+      height: WindowSize.matchParent,
+      width: WindowSize.matchParent,
+
+      // Ícone necessário registrado no Android (padrão 'ic_launcher')
     );
   }
 

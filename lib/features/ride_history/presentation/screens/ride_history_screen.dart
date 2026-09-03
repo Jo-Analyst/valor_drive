@@ -413,10 +413,10 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: _filteredRides.length,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: rides.length,
           itemBuilder: (context, index) {
-            final ride = _filteredRides[index];
+            final ride = rides[index];
             return _RideCard(ride: ride, onDelete: () => _deleteRide(ride.id));
           },
         );
@@ -484,11 +484,10 @@ class _RideCard extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        title: Flexible(
-          child: Text(
-            '${dateFormat.format(ride.dateTime)} - ${timeFormat.format(ride.dateTime)}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+        title: Text(
+          '${dateFormat.format(ride.dateTime)} - ${timeFormat.format(ride.dateTime)}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
