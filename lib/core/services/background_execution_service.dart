@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 
-const _notificationChannelId = 'valor_drive_background';
 const _notificationId = 4101;
 
 Future<void> initializeBackgroundExecution() async {
@@ -19,10 +18,9 @@ Future<void> initializeBackgroundExecution() async {
     ),
     androidConfiguration: AndroidConfiguration(
       onStart: backgroundServiceEntryPoint,
-      autoStart: true,
-      autoStartOnBoot: true,
+      autoStart: false,
+      autoStartOnBoot: false,
       isForegroundMode: true,
-      notificationChannelId: _notificationChannelId,
       initialNotificationTitle: 'ValorDrive ativo',
       initialNotificationContent: 'O acompanhamento continua em segundo plano',
       foregroundServiceNotificationId: _notificationId,
