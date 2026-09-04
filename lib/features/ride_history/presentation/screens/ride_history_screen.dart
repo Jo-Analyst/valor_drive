@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/ride_history_storage_service.dart';
 import '../../../ride_calculator/domain/models/ride_history.dart';
@@ -586,6 +588,64 @@ class _RideCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (ride.gpsRoute.isNotEmpty) ...[
+                  SizedBox(
+                    height: 200,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: FlutterMap(
+                        options: MapOptions(
+                          initialCenter: ride.gpsRoute.first,
+                          initialZoom: 14.0,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.valor_drive',
+                          ),
+                          PolylineLayer(
+                            polylines: [
+                              Polyline(
+                                points: ride.gpsRoute,
+                                strokeWidth: 4.0,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ],
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              if (ride.gpsRoute.isNotEmpty)
+                                Marker(
+                                  point: ride.gpsRoute.first,
+                                  width: 40,
+                                  height: 40,
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: Colors.green,
+                                    size: 40,
+                                  ),
+                                ),
+                              if (ride.gpsRoute.length > 1)
+                                Marker(
+                                  point: ride.gpsRoute.last,
+                                  width: 40,
+                                  height: 40,
+                                  child: Icon(
+                                    Icons.flag,
+                                    color: Colors.red,
+                                    size: 40,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 24),
+                ],
                 _buildDetailRow(
                   context,
                   'Distância',

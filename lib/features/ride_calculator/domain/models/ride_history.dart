@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:latlong2/latlong.dart';
 
 /// Modelo imutável que representa uma corrida histórica completa
 /// com data, horário, gastos e ganhos.
@@ -28,6 +29,9 @@ class RideHistory {
   /// Identificador único da corrida
   final String id;
 
+  /// Lista de coordenadas GPS do trajeto da corrida
+  final List<LatLng> gpsRoute;
+
   const RideHistory({
     required this.dateTime,
     required this.distanceKm,
@@ -37,6 +41,7 @@ class RideHistory {
     required this.grossAmount,
     required this.netProfit,
     required this.id,
+    this.gpsRoute = const [],
   });
 
   /// Factory que cria uma instância de RideHistory a partir dos dados da corrida atual
@@ -48,6 +53,7 @@ class RideHistory {
     required double totalOperationalCost,
     required double grossAmount,
     required double netProfit,
+    List<LatLng> gpsRoute = const [],
   }) {
     return RideHistory(
       dateTime: dateTime,
@@ -58,6 +64,7 @@ class RideHistory {
       grossAmount: grossAmount,
       netProfit: netProfit,
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+      gpsRoute: gpsRoute,
     );
   }
 
@@ -72,11 +79,29 @@ class RideHistory {
       'grossAmount': grossAmount,
       'netProfit': netProfit,
       'id': id,
+      'gpsRoute': gpsRoute
+          .map(
+            (latLng) => {
+              'latitude': latLng.latitude,
+              'longitude': latLng.longitude,
+            },
+          )
+          .toList(),
     };
   }
 
   /// Cria uma instância a partir de um mapa JSON
   factory RideHistory.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> gpsRouteJson = json['gpsRoute'] as List<dynamic>? ?? [];
+    final List<LatLng> gpsRoute = gpsRouteJson
+        .map(
+          (point) => LatLng(
+            (point as Map<String, dynamic>)['latitude'] as double,
+            point['longitude'] as double,
+          ),
+        )
+        .toList();
+
     return RideHistory(
       dateTime: DateTime.parse(json['dateTime'] as String),
       distanceKm: json['distanceKm'] as double,
@@ -86,6 +111,7 @@ class RideHistory {
       grossAmount: json['grossAmount'] as double,
       netProfit: json['netProfit'] as double,
       id: json['id'] as String,
+      gpsRoute: gpsRoute,
     );
   }
 
@@ -99,6 +125,7 @@ class RideHistory {
     double? grossAmount,
     double? netProfit,
     String? id,
+    List<LatLng>? gpsRoute,
   }) {
     return RideHistory(
       dateTime: dateTime ?? this.dateTime,
@@ -109,6 +136,7 @@ class RideHistory {
       grossAmount: grossAmount ?? this.grossAmount,
       netProfit: netProfit ?? this.netProfit,
       id: id ?? this.id,
+      gpsRoute: gpsRoute ?? this.gpsRoute,
     );
   }
 
@@ -123,20 +151,22 @@ class RideHistory {
         other.totalOperationalCost == totalOperationalCost &&
         other.grossAmount == grossAmount &&
         other.netProfit == netProfit &&
-        other.id == id;
+        other.id == id &&
+        listEquals(other.gpsRoute, gpsRoute);
   }
 
   @override
   int get hashCode => Object.hash(
-        dateTime,
-        distanceKm,
-        fuelCost,
-        maintenanceCost,
-        totalOperationalCost,
-        grossAmount,
-        netProfit,
-        id,
-      );
+    dateTime,
+    distanceKm,
+    fuelCost,
+    maintenanceCost,
+    totalOperationalCost,
+    grossAmount,
+    netProfit,
+    id,
+    Object.hashAll(gpsRoute),
+  );
 
   @override
   String toString() {

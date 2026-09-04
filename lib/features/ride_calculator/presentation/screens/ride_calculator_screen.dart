@@ -214,7 +214,10 @@ class _RideCalculatorScreenState extends State<RideCalculatorScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final saved = await _controller.saveCurrentRideToHistory();
+          final gpsRoute = _gpsService.routePointsSignal.value;
+          final saved = await _controller.saveCurrentRideToHistory(
+            gpsRoute: gpsRoute,
+          );
           if (saved) {
             _gpsService.resetTracking();
           }

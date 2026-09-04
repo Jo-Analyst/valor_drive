@@ -1,4 +1,5 @@
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/services/operational_cost_storage_service.dart';
 import '../../../../core/services/ride_history_storage_service.dart';
 import '../../domain/enums/calculation_mode.dart';
@@ -216,7 +217,9 @@ class RideSignalController {
   }
 
   /// Salva a corrida atual no histórico
-  Future<bool> saveCurrentRideToHistory() async {
+  Future<bool> saveCurrentRideToHistory({
+    List<LatLng> gpsRoute = const [],
+  }) async {
     if (_historyService == null) return false;
 
     final currentResult = rideResult.value;
@@ -233,6 +236,7 @@ class RideSignalController {
       totalOperationalCost: currentResult.totalOperationalCost,
       grossAmount: currentResult.grossAmount,
       netProfit: currentResult.netProfit,
+      gpsRoute: gpsRoute,
     );
 
     return await _historyService.saveRide(rideHistory);
