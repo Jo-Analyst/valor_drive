@@ -377,7 +377,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
           );
         }
 
-        final rides = snapshot.data ?? [];
+        final rides = _filteredRides;
 
         if (rides.isEmpty) {
           return Center(
